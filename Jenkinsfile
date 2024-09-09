@@ -1,6 +1,15 @@
 pipeline {
     agent any
 
+    environment {
+        // Load all credentials from Jenkins credentials store
+        MLFLOW_TRACKING_URI = credentials('mlflow-tracking-uri')
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+        BACKEND_STORE_URI = credentials('backend-store-uri')
+        ARTIFACT_ROOT = credentials('artifact-root')
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -22,10 +31,16 @@ pipeline {
             steps {
                 script {
                     // Run a temporary Docker container and execute the tests inside
-                    sh '''
-                    docker run --rm ml-pipeline-image \
+                    sh """
+                    docker run --rm \
+                    -e MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI \
+                    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+                    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+                    -e BACKEND_STORE_URI=$BACKEND_STORE_URI \
+                    -e ARTIFACT_ROOT=$ARTIFACT_ROOT \
+                    ml-pipeline-image \
                     bash -c "pytest --maxfail=1 --disable-warnings"
-                    '''
+                    """
                 }
             }
         }
@@ -34,10 +49,16 @@ pipeline {
             steps {
                 script {
                     // Run the Docker container for training after tests pass
-                    sh '''
-                    docker run --rm ml-pipeline-image \
+                    sh """
+                    docker run --rm \
+                    -e MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI \
+                    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+                    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+                    -e BACKEND_STORE_URI=$BACKEND_STORE_URI \
+                    -e ARTIFACT_ROOT=$ARTIFACT_ROOT \
+                    ml-pipeline-image \
                     bash -c "python app/train.py"
-                    '''
+                    """
                 }
             }
         }
