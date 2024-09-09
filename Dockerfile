@@ -1,6 +1,6 @@
 FROM continuumio/miniconda3
 
-WORKDIR /home/app
+WORKDIR /home
 
 RUN apt-get update
 RUN apt-get install nano unzip
@@ -8,7 +8,7 @@ RUN apt install curl -y
 
 RUN curl -fsSL https://get.deta.dev/cli.sh | sh
 
-COPY requirements.txt /dependencies/requirements.txt
-RUN pip install -r /dependencies/requirements.txt
+COPY . .
+RUN pip install -r requirements.txt
 
 CMD ["python", "app/train.py"]
