@@ -1,15 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        // Load all credentials from Jenkins credentials store
-        MLFLOW_TRACKING_URI = credentials('mlflow-tracking-uri')
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
-        BACKEND_STORE_URI = credentials('backend-store-uri')
-        ARTIFACT_ROOT = credentials('artifact-root')
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -29,22 +20,33 @@ pipeline {
 
         stage('Run Tests Inside Docker Container') {
             steps {
-                script {
-                    // Run a temporary Docker container and execute the tests inside
+                withCredentials([
+                    string(credentialsId: 'mlflow-tracking-uri', variable: 'MLFLOW_TRACKING_URI'),
+                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'backend-store-uri', variable: 'BACKEND_STORE_URI'),
+                    string(credentialsId: 'artifact-root', variable: 'ARTIFACT_ROOT')
+                ]) {
+                    // Write environment variables to a temporary file
+                    script {
+                        writeFile file: 'env.list', text: """
+                        MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI
+                        AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        BACKEND_STORE_URI=$BACKEND_STORE_URI
+                        ARTIFACT_ROOT=$ARTIFACT_ROOT
+                        """
+                    }
+
+                    // Run a temporary Docker container and pass env variables securely via --env-file
                     sh """
-                    docker run --rm \
-                    -e MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI \
-                    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-                    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-                    -e BACKEND_STORE_URI=$BACKEND_STORE_URI \
-                    -e ARTIFACT_ROOT=$ARTIFACT_ROOT \
+                    docker run --rm --env-file env.list \
                     ml-pipeline-image \
                     bash -c "pytest --maxfail=1 --disable-warnings"
                     """
                 }
             }
         }
-
     }
 
     post {
