@@ -127,9 +127,6 @@ def run_experiment(experiment_name, data_url, param_grid, artifact_path, registe
         # Train model
         model = train_model(pipe, X_train, y_train, param_grid)
 
-        # Log metrics and model
-        log_metrics_and_model(model, X_train, y_train, X_test, y_test, artifact_path, registered_model_name)
-
     # Print timing
     print(f"...Training Done! --- Total training time: {time.time() - start_time} seconds")
 
