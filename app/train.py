@@ -106,12 +106,6 @@ def run_experiment(experiment_name, data_url, param_grid, artifact_path, registe
     # Start timing
     start_time = time.time()
 
-    # Set up MLflow
-    mlflow.set_experiment(experiment_name)
-    experiment = mlflow.get_experiment_by_name(experiment_name)
-
-    mlflow.sklearn.autolog()
-
     # Load and preprocess data
     df = load_data(data_url)
     X_train, X_test, y_train, y_test = preprocess_data(df)
@@ -119,13 +113,18 @@ def run_experiment(experiment_name, data_url, param_grid, artifact_path, registe
     # Create pipeline
     pipe = create_pipeline()
 
-    # Start MLflow run
-    client = mlflow.tracking.MlflowClient()
-    run = client.create_run(experiment.experiment_id)
+    # Set experiment's info 
+    mlflow.set_experiment(experiment_name)
 
-    with mlflow.start_run(run_id=run.info.run_id) as run:
+    # Get our experiment info
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+
+    # Call mlflow autolog
+    mlflow.sklearn.autolog()
+
+    with mlflow.start_run(experiment_id = experiment.experiment_id):
         # Train model
-        model = train_model(pipe, X_train, y_train, param_grid)
+        train_model(pipe, X_train, y_train, param_grid)
 
     # Print timing
     print(f"...Training Done! --- Total training time: {time.time() - start_time} seconds")
