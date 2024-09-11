@@ -135,7 +135,7 @@ if __name__ == "__main__":
     experiment_name = "hyperparameter_tuning"
     data_url = "https://julie-2-next-resources.s3.eu-west-3.amazonaws.com/full-stack-full-time/linear-regression-ft/californian-housing-market-ft/california_housing_market.csv"
     param_grid = {
-        "Random_Forest__n_estimators": [90],
+        "Random_Forest__n_estimators": list(range(90, 101, 10)),
         "Random_Forest__criterion": ["squared_error"]
     }
     artifact_path = "modeling_housing_market"
