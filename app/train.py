@@ -114,7 +114,7 @@ def run_experiment(experiment_name, data_url, param_grid, artifact_path, registe
     pipe = create_pipeline()
 
     # Set experiment's info 
-    #mlflow.set_experiment(experiment_name)
+    mlflow.set_experiment(experiment_name)
 
     # Get our experiment info
     #experiment = mlflow.get_experiment_by_name(experiment_name)
