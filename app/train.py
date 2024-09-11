@@ -49,7 +49,7 @@ def create_pipeline():
     ])
 
 # Train model
-def train_model(pipe, X_train, y_train, param_grid, cv=9, n_jobs=-1, verbose=3):
+def train_model(pipe, X_train, y_train, param_grid, cv=2, n_jobs=-1, verbose=3):
     """
     Train the model using GridSearchCV.
 
