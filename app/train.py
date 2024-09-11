@@ -114,15 +114,15 @@ def run_experiment(experiment_name, data_url, param_grid, artifact_path, registe
     pipe = create_pipeline()
 
     # Set experiment's info 
-    mlflow.set_experiment(experiment_name)
+    #mlflow.set_experiment(experiment_name)
 
     # Get our experiment info
-    experiment = mlflow.get_experiment_by_name(experiment_name)
+    #experiment = mlflow.get_experiment_by_name(experiment_name)
 
     # Call mlflow autolog
     mlflow.sklearn.autolog()
 
-    with mlflow.start_run(experiment_id = experiment.experiment_id):
+    with mlflow.start_run():
         # Train model
         train_model(pipe, X_train, y_train, param_grid)
 
