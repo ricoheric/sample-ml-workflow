@@ -27,8 +27,6 @@ pipeline {
                     string(credentialsId: 'backend-store-uri', variable: 'BACKEND_STORE_URI'),
                     string(credentialsId: 'artifact-root', variable: 'ARTIFACT_ROOT')
                 ]) {
-                    // Write environment variables to a temporary file
-                    // KEEP SINGLE QUOTE FOR SECURITY PURPOSES (MORE INFO HERE: https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#handling-credentials)
                     script {
                         writeFile file: 'env.list', text: '''
                         MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI
@@ -39,11 +37,25 @@ pipeline {
                         '''
                     }
 
-                    // Run a temporary Docker container and pass env variables securely via --env-file
                     sh '''
                     docker run --rm --env-file env.list \
                     ml-pipeline-image \
                     bash -c "pytest --maxfail=1 --disable-warnings"
+                    '''
+                }
+            }
+        }
+
+        stage('Run MLflow Project') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'mlflow-tracking-uri', variable: 'MLFLOW_TRACKING_URI'),
+                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                    pip install mlflow
+                    mlflow run . --entry-point main
                     '''
                 }
             }
