@@ -44,7 +44,7 @@ ARTIFACT_ROOT=$ARTIFACT_ROOT
             }
         }
 
-        stage('Run MLflow Project Inside Docker') {
+                stage('Run MLflow Project Inside Docker') {
             steps {
                 withCredentials([
                     string(credentialsId: 'mlflow-tracking-uri', variable: 'MLFLOW_TRACKING_URI'),
@@ -53,16 +53,26 @@ ARTIFACT_ROOT=$ARTIFACT_ROOT
                     string(credentialsId: 'backend-store-uri', variable: 'BACKEND_STORE_URI'),
                     string(credentialsId: 'artifact-root', variable: 'ARTIFACT_ROOT')
                 ]) {
+                    // C'est une bonne pratique de créer le fichier juste avant de l'utiliser
+                    script {
+                        writeFile file: 'env.list', text: """
+MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI
+AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+BACKEND_STORE_URI=$BACKEND_STORE_URI
+ARTIFACT_ROOT=$ARTIFACT_ROOT
+                        """
+                    }
+
+                    // Commande docker run simplifiée et corrigée
                     sh '''
                     docker run --rm --env-file env.list \
-                    -v $(pwd):/app -w /app \
                     ml-pipeline-image \
-                    bash -c "pip install -r requirements.txt && mlflow run . --entry-point main"
+                    mlflow run . --entry-point main
                     '''
                 }
             }
         }
-    }
 
     post {
         always {
