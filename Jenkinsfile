@@ -49,9 +49,11 @@ pipeline {
         stage('Run MLflow Project') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'mlflow-tracking-uri', variable: 'MLFLOW_TRACKING_URI'),
+                     string(credentialsId: 'mlflow-tracking-uri', variable: 'MLFLOW_TRACKING_URI'),
                     string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'backend-store-uri', variable: 'BACKEND_STORE_URI'),
+                    string(credentialsId: 'artifact-root', variable: 'ARTIFACT_ROOT')
                 ]) {
                     sh '''
                     pip install mlflow
