@@ -4,7 +4,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the repository
                 git branch: 'main', url: 'https://github.com/JedhaBootcamp/sample-ml-workflow.git'
             }
         }
@@ -12,7 +11,6 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build the Docker image using the Dockerfile
                     sh 'docker build -t ml-pipeline-image .'
                 }
             }
@@ -49,15 +47,18 @@ pipeline {
         stage('Run MLflow Project') {
             steps {
                 withCredentials([
-                     string(credentialsId: 'mlflow-tracking-uri', variable: 'MLFLOW_TRACKING_URI'),
+                    string(credentialsId: 'mlflow-tracking-uri', variable: 'MLFLOW_TRACKING_URI'),
                     string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY'),
                     string(credentialsId: 'backend-store-uri', variable: 'BACKEND_STORE_URI'),
                     string(credentialsId: 'artifact-root', variable: 'ARTIFACT_ROOT')
                 ]) {
                     sh '''
-                    pip install mlflow
-                    mlflow run . --entry-point main
+                    which python3 || echo "Python3 is missing"
+                    python3 -m ensurepip --upgrade || true
+                    python3 -m pip install --upgrade pip
+                    python3 -m pip install -r requirements.txt
+                    python3 -m mlflow run . --entry-point main
                     '''
                 }
             }
@@ -66,7 +67,6 @@ pipeline {
 
     post {
         always {
-            // Clean up workspace and remove dangling Docker images
             sh 'docker system prune -f'
         }
         success {
