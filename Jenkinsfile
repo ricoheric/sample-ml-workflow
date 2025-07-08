@@ -27,11 +27,11 @@ pipeline {
                 ]) {
                     script {
                         writeFile file: 'env.list', text: '''
-                        MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI
-                        AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                        AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                        BACKEND_STORE_URI=$BACKEND_STORE_URI
-                        ARTIFACT_ROOT=$ARTIFACT_ROOT
+MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI
+AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+BACKEND_STORE_URI=$BACKEND_STORE_URI
+ARTIFACT_ROOT=$ARTIFACT_ROOT
                         '''
                     }
 
@@ -44,7 +44,7 @@ pipeline {
             }
         }
 
-        stage('Run MLflow Project') {
+        stage('Run MLflow Project Inside Docker') {
             steps {
                 withCredentials([
                     string(credentialsId: 'mlflow-tracking-uri', variable: 'MLFLOW_TRACKING_URI'),
@@ -54,11 +54,10 @@ pipeline {
                     string(credentialsId: 'artifact-root', variable: 'ARTIFACT_ROOT')
                 ]) {
                     sh '''
-                    which python3 || echo "Python3 is missing"
-                    python3 -m ensurepip --upgrade || true
-                    python3 -m pip install --upgrade pip
-                    python3 -m pip install -r requirements.txt
-                    python3 -m mlflow run . --entry-point main
+                    docker run --rm --env-file env.list \
+                    -v $(pwd):/app -w /app \
+                    ml-pipeline-image \
+                    bash -c "pip install -r requirements.txt && mlflow run . --entry-point main"
                     '''
                 }
             }
