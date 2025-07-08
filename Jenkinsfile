@@ -50,10 +50,13 @@ ARTIFACT_ROOT=$ARTIFACT_ROOT
                     string(credentialsId: 'backend-store-uri', variable: 'BACKEND_STORE_URI'),
                     string(credentialsId: 'artifact-root', variable: 'ARTIFACT_ROOT')
                 ]) {
-                    // La commande corrigée : on exécute directement le script python.
-                    // On est déjà dans le bon conteneur, pas besoin que MLflow en lance un autre.
+                    // LA COMMANDE FINALE :
+                    // On utilise 'mlflow run' pour son intelligence sur les paramètres.
+                    // On ajoute '--backend local' pour l'empêcher de lancer un autre conteneur Docker.
                     sh '''
-                    docker run --rm --env-file env.list ml-pipeline-image python main.py
+                    docker run --rm --env-file env.list \
+                    ml-pipeline-image \
+                    mlflow run . --entry-point main --backend local
                     '''
                 }
             }
