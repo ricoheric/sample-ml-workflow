@@ -50,10 +50,10 @@ ARTIFACT_ROOT=$ARTIFACT_ROOT
                     string(credentialsId: 'backend-store-uri', variable: 'BACKEND_STORE_URI'),
                     string(credentialsId: 'artifact-root', variable: 'ARTIFACT_ROOT')
                 ]) {
-                    // La commande correcte : SANS montage de volume.
-                    // Rien ne sera écrit dans le workspace Jenkins. Le problème de permission est évité.
+                    // La commande corrigée : on exécute directement le script python.
+                    // On est déjà dans le bon conteneur, pas besoin que MLflow en lance un autre.
                     sh '''
-                    docker run --rm --env-file env.list ml-pipeline-image mlflow run . --entry-point main
+                    docker run --rm --env-file env.list ml-pipeline-image python main.py
                     '''
                 }
             }
@@ -63,7 +63,6 @@ ARTIFACT_ROOT=$ARTIFACT_ROOT
     post {
         always {
             sh 'docker system prune -f'
-            // cleanWs est la méthode propre pour nettoyer le workspace à la fin.
             cleanWs()
         }
         success {
