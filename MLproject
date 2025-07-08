@@ -1,6 +1,6 @@
 name: californian_housing_market
 docker_env:
-  image: jedha/sample-mlflow-server
+  #image: jedha/sample-mlflow-server
   environment: [
     "MLFLOW_TRACKING_URI",
     "MLFLOW_EXPERIMENT_ID",
