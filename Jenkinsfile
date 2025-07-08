@@ -1,23 +1,24 @@
 pipeline {
     agent any
 
-    // Toutes les étapes du pipeline doivent être à l'intérieur de ce bloc 'stages'
     stages {
         stage('Checkout') {
             steps {
+                // Récupération du code source
                 git branch: 'main', url: 'https://github.com/ricoheric/sample-ml-workflow.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
+                // Construction de l'image qui contient le code et les dépendances
                 script {
                     sh 'docker build -t ml-pipeline-image .'
                 }
             }
         }
 
-        stage('Run Tests Inside Docker Container') {
+        stage('Run Tests') {
             steps {
                 withCredentials([
                     string(credentialsId: 'mlflow-tracking-uri', variable: 'MLFLOW_TRACKING_URI'),
@@ -27,7 +28,7 @@ pipeline {
                     string(credentialsId: 'artifact-root', variable: 'ARTIFACT_ROOT')
                 ]) {
                     script {
-                        // Création du fichier d'environnement pour les tests
+                        // Création du fichier d'environnement
                         writeFile file: 'env.list', text: """
 MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI
 AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
@@ -37,6 +38,7 @@ ARTIFACT_ROOT=$ARTIFACT_ROOT
                         """
                     }
 
+                    // Exécution des tests dans un conteneur éphémère
                     sh '''
                     docker run --rm --env-file env.list \
                     ml-pipeline-image \
@@ -46,8 +48,7 @@ ARTIFACT_ROOT=$ARTIFACT_ROOT
             }
         }
 
-        // Ce stage doit être à l'intérieur du bloc 'stages'
-        stage('Run MLflow Project Inside Docker') {
+        stage('Run MLflow Training') {
             steps {
                 withCredentials([
                     string(credentialsId: 'mlflow-tracking-uri', variable: 'MLFLOW_TRACKING_URI'),
@@ -56,20 +57,10 @@ ARTIFACT_ROOT=$ARTIFACT_ROOT
                     string(credentialsId: 'backend-store-uri', variable: 'BACKEND_STORE_URI'),
                     string(credentialsId: 'artifact-root', variable: 'ARTIFACT_ROOT')
                 ]) {
-                    // Il est préférable de recréer le fichier ici pour que le stage soit autonome.
-                    // Le fichier du stage précédent est écrasé, ce qui est correct.
-                    script {
-                        writeFile file: 'env.list', text: """
-MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI
-AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-BACKEND_STORE_URI=$BACKEND_STORE_URI
-ARTIFACT_ROOT=$ARTIFACT_ROOT
-                        """
-                    }
-
-                    // Commande docker run simplifiée et corrigée pour le contexte Docker-in-Docker
-                    // Pas de montage de volume (-v) ni de pip install, car tout est déjà dans l'image.
+                    // La commande est propre et isolée.
+                    // AUCUN montage de volume `-v` ! C'est la clé.
+                    // Le conteneur communique avec le serveur MLflow via le réseau.
+                    // Les fichiers temporaires (s'il y en a) restent dans le conteneur et sont détruits avec --rm.
                     sh '''
                     docker run --rm --env-file env.list \
                     ml-pipeline-image \
@@ -78,19 +69,20 @@ ARTIFACT_ROOT=$ARTIFACT_ROOT
                 }
             }
         }
-
-    } // <-- C'est l'accolade fermante pour le bloc 'stages' qui manquait au bon endroit.
+    }
 
     post {
         always {
-            // Nettoyage des images Docker non utilisées pour libérer de l'espace
+            // Nettoyage des images Docker non utilisées
             sh 'docker system prune -f'
-            // Suppression du fichier de credentials pour ne pas le laisser dans le workspace
-            deleteDir() 
-            //sh 'rm -f env.list'
+            
+            // Utilisation de cleanWs() pour un nettoyage fiable et standard du workspace.
+            // Cela supprimera le fichier env.list et les autres fichiers du checkout.
+            // Cela fonctionnera maintenant car aucun fichier appartenant à root n'a été créé.
+            cleanWs()
         }
         success {
-            echo 'Pipeline completed successfully!'
+            echo 'Pipeline completed successfully! Check your MLflow server for the new run.'
         }
         failure {
             echo 'Pipeline failed. Check logs for errors.'
